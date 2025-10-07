@@ -1,1 +1,33 @@
-
+exit
+    2  halt
+    3  ls
+    4  kubectl get nodes
+    5  kubectl run mypod --image=nginx
+    6  kubectl get pods -o wide
+    7  kubectl run pod2 --image=httpd
+    8  kubectl get pods -o wide
+    9  curl 192.168.1.4:80
+   10  kubectl run pod3 --image=tomcat
+   11  kubectl get pods -o wide
+   12  kubectl exec -it mypod -- sh
+   13  history
+   14  kubectl get pods -o wide
+   15  kubectl delete po mypod
+   16  kubectl run mypod --image=nginx
+   17  kubectl get pods -o wide
+   18  kubectl expose po mypod --port=80 
+   19  kubectl get svc
+   20  curl 10.99.74.11
+   21  kubectl delete po mypod
+   22  kubectl run mypod --image=nginx
+   23  kubectl get pods -o wide
+   24  kubectl get svc
+   25  curl 10.99.74.11
+   26  kubectl expose po mypod --port=80 --type=NordPort --name my-svc
+   27  kubectl expose po pod2 --port=80 --type=NordPort --name my-svc
+   28  kubectl expose po pod2 --port=80 --type=NodePort --name my-svc
+   29  kubectl get svc
+   30  curl 10.107.49.247
+   31  kubectl expose po pod3 --port=80 --type=LoadBalancer --name my-svc-load
+   32  kubectl get svc
+   33  history
