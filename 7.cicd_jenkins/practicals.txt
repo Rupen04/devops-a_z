@@ -1,0 +1,208 @@
+This document contains short descriptions of all the CI/CD practicals completed using Jenkins, GitHub, Maven, SonarQube, Tomcat, and AWS.
+
+🧩 Module 1 — Jenkins Basics & Distributed Builds
+1️⃣ Jenkins Master–Agent (Node) Setup
+Configured Jenkins master and connected a remote agent machine using SSH credentials for distributed builds and scalability.
+
+2️⃣ Maven Installation & Configuration
+Installed Maven on Jenkins nodes and configured global tool settings for automated Java project builds.
+
+3️⃣ SonarQube Server Integration
+Added SonarQube server and configured authentication tokens inside Jenkins for automated code analysis.
+
+🔄 Module 2 — Continuous Integration Jobs
+4️⃣ Freestyle Job from Git
+Created a basic Jenkins job that pulls source code from GitHub and runs a build command.
+
+5️⃣ Jenkins Pipeline Job
+Introduced declarative pipeline-as-code using a Jenkinsfile for structured CI automation.
+
+6️⃣ Multi-Stage Pipeline (Pull → Build → Deploy)
+Created multiple stages such as pulling code, building artifacts, and deployment steps to demonstrate full flow.
+
+🧪 Module 3 — Build & Code Quality Automation
+7️⃣ GitHub Integration in Pipeline
+Used the Git step inside a pipeline script to clone source code from GitHub automatically.
+
+8️⃣ Maven Build Stage
+Executed mvn clean package using a shell script from the Jenkins agent to generate a WAR artifact.
+
+9️⃣ SonarQube Code Quality Stage
+Added SonarQube scanner stage to pipeline to check code quality and vulnerabilities.
+
+🔟 Quality Gates Enforced
+Ensured build fails if SonarQube code quality conditions aren’t met → prevents bad code from progressing.
+
+1️⃣1️⃣ Secure Credential Handling
+Used Jenkins Credentials Binding plugin to hide SonarQube keys and avoid exposing secrets in pipeline logs.
+
+1️⃣2️⃣ SonarQube Webhook Integration
+Configured webhook to send instant feedback to Jenkins about quality gate results → faster failure detection.
+
+🚀 Module 4 — Deployment & Delivery Automation
+1️⃣3️⃣ Deploy to Apache Tomcat on EC2
+Copied WAR artifact to a remote Tomcat server using SSH + restarted Tomcat for application deployment.
+
+1️⃣4️⃣ Continuous Delivery to Amazon S3
+Uploaded generated WAR to S3 bucket as a delivery mechanism for later deployment → version storage.
+
+🔔 Module 5 — GitHub Webhook Triggered CI/CD
+1️⃣5️⃣ Automatic CI/CD via GitHub Webhooks
+Configured webhook so that any new code push automatically triggers Jenkins pipeline → Pull → Build → Deploy.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+StageCodes_made:- 
+
+1> sonar-pipeline-hidden-credentials
+pipeline {
+    agent {label 'slave'}
+
+    stages {
+        stage('pull-stage') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Rupen04/artifact_pom.git'
+            }
+        }
+
+        stage('build') {
+            steps {
+                sh '/opt/maven/bin/mvn clean package'
+            }
+        }
+
+        stage ('sonar testing') {
+            steps {
+                withSonarQubeEnv(installationName: 'rupen-sonar', credentialsId: 'rupensonar') {
+                    sh '/opt/maven/bin/mvn sonar:sonar'
+                }
+            }
+        }
+
+        stage ('quality gate') {
+            steps {
+                waitForQualityGate abortPipeline: false, credentialsId: 'rupensonar'
+            }
+        }
+        stage ('deploy') {
+            steps {
+                echo "deploy success"
+            }
+        }
+    }
+}
+
+2>Deployment Stage Practical :- 
+pipeline {
+    agent {label 'slave'}
+
+    stages {
+        stage('pull-stage') {
+            steps{
+                git branch: 'main', url: 'https://github.com/Athu1717/my-student-app.git'
+            }
+        }
+
+        stage('build') {
+            steps{
+                sh '/opt/maven/bin/mvn clean package'
+            }
+        }
+
+        stage('sonar testing') {
+            steps{
+                withSonarQubeEnv(installationName: 'sonar', credentialsId: 'sonar-credy') {
+                    sh '/opt/maven/bin/mvn sonar:sonar'
+                
+               }
+            }
+        }
+
+        // stage('quality gate'){
+        //     steps {
+        //         waitForQualityGate true
+        //     }
+        // }
+
+        stage ('deploy') {
+            steps{
+                deploy adapters: [tomcat9(alternativeDeploymentContext: '', credentialsId: 'tomcat-cred', path: '', url: 'http://54.87.31.68:8080')], contextPath: '/', war: '**/*.war'
+				deploy adapters: [tomcat9(alternativeDeploymentContext: '', credentialsId: 'tomcat-cred', path: '', url: 'http://3.93.48.8:8080')], contextPath: '/', war: '**/*.war'
+            }
+        }
+    }
+}
+
+3>storing artifacts to s3 via cli pipeline code :- 
+pipeline {
+    agent {label 'slave'}
+    stages {
+        stage('pulling') {
+            steps {
+                git branch: 'main' , url: 'https://github.com/Rupen04/artifact_pom.git'
+            }
+        }
+        // stage('building') {
+        //     steps {
+        //         sh '/opt/maven-new/bin/mvn clean package'
+        //     }
+        // }
+        stage('building') {
+            steps {
+                sh '/opt/maven-new/bin/mvn clean package'
+            }
+        }
+
+        stage('s3-stage') {
+            steps {
+               // withCredentials([usernamePassword(credentialsId: 'sd-cred', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) 
+               withCredentials([usernamePassword(credentialsId: 'sd-cred', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                  sh "aws s3 cp target/studentapp-2.2-SNAPSHOT.war s3://s3-arti123/"
+                }
+            }
+        }
+    }
+}
+
+4>github-webhook practical :- 
+pipeline {
+    agent {label 'slave'}
+
+     triggers {
+            githubPush()
+        }
+        
+    stages {
+        stage('pulling') {
+            steps {
+                git branch: 'main' , url: 'https://github.com/Rupen04/artifact_pom.git'
+            }
+        }
+        // stage('building') {
+        //     steps {
+        //         sh '/opt/maven-new/bin/mvn clean package'
+        //     }
+        // }
+        stage('building') {
+            steps {
+                sh '/opt/maven/bin/mvn clean package'
+            }
+        }
+
+        // stage('s3-stage') {
+        //     steps {
+        //        // withCredentials([usernamePassword(credentialsId: 'sd-cred', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) 
+        //        withCredentials([usernamePassword(credentialsId: 'sd-cred', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+        //           sh "aws s3 cp target/studentapp-2.2-SNAPSHOT.war s3://s3-arti123/"
+        //         }
+        //     }
+        // }
+
+        stage ('deploy') {
+            steps {
+                echo 'deploy stage'
+            }
+        }
+
+    }
+}
